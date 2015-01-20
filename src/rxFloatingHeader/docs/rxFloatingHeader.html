@@ -30,12 +30,13 @@
   it in a separate `&lt;tr&gt;` element.
   </p>
 
+
 <div ng-controller="rxFloatingHeaderCtrl">
     <table rx-floating-header class="filter">
         <thead>
             <tr>
                 <th colspan="2">
-                    <input placeholder="Filter by any..." style="font-style: italic" ng-model="searchText">
+                    <input placeholder="Filter by any..." style="font-style: italic" ng-model="foo.searchText">
                     <button class="pull-right button" ng-click="clearFilter()">
                         Clear Filter
                     </button>
@@ -44,6 +45,9 @@
             <tr>
                 <th>Column One Header</th>
                 <th>Column Two Header</th>
+            </tr>
+            <tr ng-show="foo.searchText === 'f'">
+                <th colspan="2">Message</th>
             </tr>
         </thead>
         <tbody>

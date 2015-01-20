@@ -5,7 +5,7 @@
  * Turns a tableheader into a floating persistent header
  */
 angular.module('encore.ui.rxFloatingHeader', [])
-.directive('rxFloatingHeader', function (rxDOMHelper) {
+.directive('rxFloatingHeader', function ($compile, rxDOMHelper) {
     return {
         restrict: 'A',
         scope: {},
@@ -31,7 +31,17 @@ angular.module('encore.ui.rxFloatingHeader', [])
             // Grab all the original `tr` elements from the `thead`,
             _.each(header.find('tr'), function (tr) {
                 tr = angular.element(tr);
-                clones.push(tr.clone());
+
+                // We are going to clone all the <tr> elements in the <thead>, and insert them
+                // into the DOM whenever the original <tr> elements need to float. This keeps the
+                // height of the table correct, and prevents it from jumping up when we put
+                // the <tr> elements into a floating state.
+                // We have to $compile() against the *parent* scope, not the scope of this directive,
+                // in case there are any bindings in the original <tr> elements. For instance, say we had
+                // <tr ng-show="foo">Hi</tr>. In this case, the `foo` variable will not be on the scope
+                // of this directive, but instead on the scope of whatever controller this table lives in.
+                var clone = tr.clone();
+                clones.push($compile(clone)(scope.$parent));
                 trs.push(tr);
                 ths = ths.concat(_.map(tr.find('th'), angular.element));
             });
@@ -40,9 +50,12 @@ angular.module('encore.ui.rxFloatingHeader', [])
             _.each(ths, function (th) {
                 var input = th.find('input');
                 if (input.length) {
-                    th.addClass('filter-header');
-                    input.addClass('filter-box');
-                    inputs.push(input);
+                    var type = input.attr('type');
+                    if (!type || type === 'text') {
+                        th.addClass('filter-header');
+                        input.addClass('filter-box');
+                        inputs.push(input);
+                    }
                 }
             });
 
@@ -61,7 +74,7 @@ angular.module('encore.ui.rxFloatingHeader', [])
 
                         // Get the current height of each `tr` that we want to float
                         _.each(trs, function (tr) {
-                            trHeights.push(rxDOMHelper.height(tr));
+                            trHeights.push(parseInt(rxDOMHelper.height(tr).replace('px', '')));
                         });
 
                         // Grab the current widths of each `th` that we want to float
@@ -80,7 +93,7 @@ angular.module('encore.ui.rxFloatingHeader', [])
                         var topOffset = 0;
                         _.each(trs, function (tr, index) {
                             tr.addClass('rx-floating-header');
-                            tr.css({ 'top': topOffset });
+                            tr.css({ 'top': topOffset + 'px' });
                             topOffset += trHeights[index];
                         });
 

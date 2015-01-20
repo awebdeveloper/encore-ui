@@ -2,12 +2,23 @@
 
 // This file is used to help build the 'demo' documentation page and should be updated with example code
 function rxFloatingHeaderCtrl ($scope) {
+    $scope.foo = { searchText: '' };
     $scope.data = [
         { name: 'A', value: 1 },
         { name: 'B', value: 2 },
         { name: 'C', value: 3 },
         { name: 'D', value: 4 },
         { name: 'E', value: 5 },
+        { name: 'F', value: 1 },
+        { name: 'F', value: 1 },
+        { name: 'F', value: 1 },
+        { name: 'F', value: 1 },
+        { name: 'F', value: 1 },
+        { name: 'F', value: 1 },
+        { name: 'F', value: 1 },
+        { name: 'F', value: 1 },
+        { name: 'F', value: 1 },
+        { name: 'F', value: 1 },
         { name: 'F', value: 1 },
         { name: 'G', value: 2 },
         { name: 'H', value: 3 },
@@ -18,7 +29,7 @@ function rxFloatingHeaderCtrl ($scope) {
     ];
 
     $scope.clearFilter = function () {
-        $scope.searchText = '';
+        $scope.foo.searchText = '';
     };
 
 }
