@@ -62,7 +62,7 @@ To accommodate different statuses, the `rxStatusMappings` factory includes metho
     rxStatusMappings.addGlobal({
         'RUNNING': 'ACTIVE',
         'STANDBY': 'INFO',
-        'REBOOTING': 'WARNING',
+        'SUSPENDED': 'WARNING',
         'FAILURE': 'ERROR'
     })
 
