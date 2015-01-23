@@ -8,18 +8,21 @@ angular.module('encore.ui.rxFloatingHeader', [])
 .directive('rxFloatingHeader', function ($compile, rxDOMHelper) {
     return {
         restrict: 'A',
+        controller: function ($scope) {
+            this.update = function () {
+                $scope.update();
+            };
+        },
         link: function (scope, table) {
-            var state, seenFirstScroll, trs, ths, clones, inputs, maxHeight, header;
+            var state, seenFirstScroll, trs, ths, clones, inputs, maxHeight, header, singleThs, maxThWidth;
 
             var setup = function () {
 
                 if (clones && clones.length) {
                     _.each(clones, function (clone) {
-                        var scope = clone.scope();
+                        // Possible memory leak here? I tried clone.scope().$destroy(),
+                        // but it causes exceptions in Angular
                         clone.remove();
-                        if (scope) {
-                            scope.$destroy();
-                        }
                     });
                 }
                 state = 'fixed',
@@ -31,6 +34,12 @@ angular.module('encore.ui.rxFloatingHeader', [])
                 // The original <th> elements
                 ths = [],
 
+                // All <th> elements that are the *only* <th> in their row
+                singleThs = [],
+
+                // The maximum width we could find for a <th>
+                maxThWidth = 0,
+
                 // Clones of the <tr> elements
                 clones = [],
 
@@ -39,22 +48,67 @@ angular.module('encore.ui.rxFloatingHeader', [])
                 maxHeight,
                 header = angular.element(table.find('thead'));
                 
+                // Are we currently floating?
+                
+                var floating = false;
                 // Grab all the original `tr` elements from the `thead`,
                 _.each(header.find('tr'), function (tr) {
                     tr = angular.element(tr);
+
+                    // If `scope.setup()` has been called, it means we'd previously
+                    // worked with these rows before. We want them in as clean a state as possible
+                    if (!floating && tr.hasClass('rx-floating-header')) {
+                        floating = true;
+                    }
+
+                    if (floating) {
+                        // We don't want this class to be cloned
+                        tr.removeClass('rx-floating-header');
+                    }
 
                     // We are going to clone all the <tr> elements in the <thead>, and insert them
                     // into the DOM whenever the original <tr> elements need to float. This keeps the
                     // height of the table correct, and prevents it from jumping up when we put
                     // the <tr> elements into a floating state.
-                    // We have to $compile() against the *parent* scope, not the scope of this directive,
-                    // in case there are any bindings in the original <tr> elements. For instance, say we had
-                    // <tr ng-show="foo">Hi</tr>. In this case, the `foo` variable will not be on the scope
-                    // of this directive, but instead on the scope of whatever controller this table lives in.
+                    // It also makes sure the column widths stay correct, as the widths of the columns
+                    // are determined by the current fixed header, not the floating header.
                     var clone = tr.clone();
                     clones.push(clone);
+
+                    if (floating) {
+                        // We're currently floading, so add the class back, and
+                        // push the clone back on
+                        tr.addClass('rx-floating-header');
+                        header.append(clone);
+                    }
                     trs.push(tr);
-                    ths = ths.concat(_.map(tr.find('th'), angular.element));
+
+                    var thsInTr = _.map(tr.find('th'), angular.element);
+                    ths = ths.concat(thsInTr);
+
+                    // This <tr> only had one <th> in it. Grab that <th> and its clone
+                    // Also grab the width of the <th>, and compare it to our max width.
+                    // We need to do this because if a <th> was hidden, and then made to
+                    // appear while floating, its width will be too short, and will need
+                    // to be updated
+                    if (thsInTr.length === 1) {
+                        var th = thsInTr[0];
+                        var width = rxDOMHelper.width(th);
+                        if (width !== 'auto') {
+                            var numeric = _.parseInt(width.replace('px', ''));
+                            if (numeric > maxThWidth) {
+                                maxThWidth = numeric;
+                            }
+                        }
+
+                        singleThs.push([th, angular.element(clone.find('th'))]);
+                    }
+                });
+
+                maxThWidth = maxThWidth.toString() + 'px';
+                _.each(singleThs, function (thPair) {
+                    thPair[0].css({ width: maxThWidth });
+                    thPair[1].css({ width: maxThWidth });
                 });
 
                 // Apply .filter-header to any <input> elements
@@ -97,7 +151,6 @@ angular.module('encore.ui.rxFloatingHeader', [])
                         // Put the cloned `tr` elements back into the DOM
                         _.each(clones, function (clone) {
                             header.append(clone);
-                            $compile(clone)(scope.$new());
                         });
 
                         // Apply the rx-floating-header class to each `tr` and
@@ -152,14 +205,9 @@ angular.module('encore.ui.rxFloatingHeader', [])
                 updateHeaders();
             });
 
-            scope.$watch(
-                function () {
-                    return header.find('th').length;
-                },
-                function () {
-                    setup();
-                });
-
+            scope.update = function () {
+                setup();
+            };
         },
     };
 })
