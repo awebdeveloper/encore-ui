@@ -1,7 +1,7 @@
 /* jshint node: true */
 
 describe('rxFloatingHeader', function () {
-    var scope, compile, rootScope, el, isolateScope;
+    var scope, compile, rootScope, el;
     var validTemplate =
         '<table rx-floating-header>' +
             '<thead>' +
@@ -68,7 +68,6 @@ describe('rxFloatingHeader', function () {
 
         el = helpers.createDirective(validTemplate, compile, scope);
         scope.$digest();
-        isolateScope = el.isolateScope();
     });
 
     it('should apply .filter-header and .filter-box to headers and inputs', function () {
@@ -87,16 +86,16 @@ describe('rxFloatingHeader', function () {
     });
 
     it('should add .rx-floating-header when we scroll past the header', function () {
-        isolateScope.updateHeaders();
+        scope.updateHeaders();
         expect(el.find('thead tr').hasClass('rx-floating-header')).to.be.true;
     });
 
     it('should remove .rx-floating-header when we scroll back up', function () {
-        isolateScope.updateHeaders();
+        scope.updateHeaders();
         expect(el.find('thead tr').hasClass('rx-floating-header'), 'add class').to.be.true;
 
         mockJq.setShouldFloat(false);
-        isolateScope.updateHeaders();
+        scope.updateHeaders();
         expect(el.find('thead tr').hasClass('rx-floating-header'), 'removed class').to.be.false;
     });
 });

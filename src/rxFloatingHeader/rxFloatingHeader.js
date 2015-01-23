@@ -127,7 +127,7 @@ angular.module('encore.ui.rxFloatingHeader', [])
 
             setup();
 
-            var updateHeaders = function () {
+            scope.updateHeaders = function () {
                 if (_.isUndefined(maxHeight)) {
                     maxHeight = table[0].offsetHeight;
                 }
@@ -202,7 +202,7 @@ angular.module('encore.ui.rxFloatingHeader', [])
             };
 
             rxDOMHelper.onscroll(function () {
-                updateHeaders();
+                scope.updateHeaders();
             });
 
             scope.update = function () {
