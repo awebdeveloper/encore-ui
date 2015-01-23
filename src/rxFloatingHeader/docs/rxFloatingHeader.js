@@ -9,7 +9,7 @@ function rxFloatingHeaderCtrl ($scope) {
         { name: 'C', value: 3 },
         { name: 'D', value: 4 },
         { name: 'E', value: 5 },
-        { name: 'F', value: 1 },
+        { name: 'First', value: 1 },
         { name: 'F', value: 1 },
         { name: 'F', value: 1 },
         { name: 'F', value: 1 },

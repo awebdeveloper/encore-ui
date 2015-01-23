@@ -51,7 +51,7 @@
             </tr>
         </thead>
         <tbody>
-            <tr ng-repeat="datum in data | filter:searchText" class="row_{{datum.value}}" ng-class="{'middle-row': $index===2}">
+            <tr ng-repeat="datum in data | filter:foo.searchText" class="row_{{datum.value}}" ng-class="{'middle-row': $index===2}">
                 <td>{{datum.name}}</td>
                 <td>{{datum.value}}</td>
             </tr>

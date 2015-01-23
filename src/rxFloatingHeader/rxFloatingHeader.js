@@ -8,10 +8,21 @@ angular.module('encore.ui.rxFloatingHeader', [])
 .directive('rxFloatingHeader', function ($compile, rxDOMHelper) {
     return {
         restrict: 'A',
-        scope: {},
         link: function (scope, table) {
+            var state, seenFirstScroll, trs, ths, clones, inputs, maxHeight, header;
 
-            var state = 'fixed',
+            var setup = function () {
+
+                if (clones && clones.length) {
+                    _.each(clones, function (clone) {
+                        var scope = clone.scope();
+                        clone.remove();
+                        if (scope) {
+                            scope.$destroy();
+                        }
+                    });
+                }
+                state = 'fixed',
                 seenFirstScroll = false,
 
                 // The original <tr> elements
@@ -27,39 +38,42 @@ angular.module('encore.ui.rxFloatingHeader', [])
                 inputs = [],
                 maxHeight,
                 header = angular.element(table.find('thead'));
+                
+                // Grab all the original `tr` elements from the `thead`,
+                _.each(header.find('tr'), function (tr) {
+                    tr = angular.element(tr);
 
-            // Grab all the original `tr` elements from the `thead`,
-            _.each(header.find('tr'), function (tr) {
-                tr = angular.element(tr);
+                    // We are going to clone all the <tr> elements in the <thead>, and insert them
+                    // into the DOM whenever the original <tr> elements need to float. This keeps the
+                    // height of the table correct, and prevents it from jumping up when we put
+                    // the <tr> elements into a floating state.
+                    // We have to $compile() against the *parent* scope, not the scope of this directive,
+                    // in case there are any bindings in the original <tr> elements. For instance, say we had
+                    // <tr ng-show="foo">Hi</tr>. In this case, the `foo` variable will not be on the scope
+                    // of this directive, but instead on the scope of whatever controller this table lives in.
+                    var clone = tr.clone();
+                    clones.push(clone);
+                    trs.push(tr);
+                    ths = ths.concat(_.map(tr.find('th'), angular.element));
+                });
 
-                // We are going to clone all the <tr> elements in the <thead>, and insert them
-                // into the DOM whenever the original <tr> elements need to float. This keeps the
-                // height of the table correct, and prevents it from jumping up when we put
-                // the <tr> elements into a floating state.
-                // We have to $compile() against the *parent* scope, not the scope of this directive,
-                // in case there are any bindings in the original <tr> elements. For instance, say we had
-                // <tr ng-show="foo">Hi</tr>. In this case, the `foo` variable will not be on the scope
-                // of this directive, but instead on the scope of whatever controller this table lives in.
-                var clone = tr.clone();
-                clones.push($compile(clone)(scope.$parent));
-                trs.push(tr);
-                ths = ths.concat(_.map(tr.find('th'), angular.element));
-            });
-
-            // Apply .filter-header to any <input> elements
-            _.each(ths, function (th) {
-                var input = th.find('input');
-                if (input.length) {
-                    var type = input.attr('type');
-                    if (!type || type === 'text') {
-                        th.addClass('filter-header');
-                        input.addClass('filter-box');
-                        inputs.push(input);
+                // Apply .filter-header to any <input> elements
+                _.each(ths, function (th) {
+                    var input = th.find('input');
+                    if (input.length) {
+                        var type = input.attr('type');
+                        if (!type || type === 'text') {
+                            th.addClass('filter-header');
+                            input.addClass('filter-box');
+                            inputs.push(input);
+                        }
                     }
-                }
-            });
+                });
+            };
 
-            scope.updateHeaders = function () {
+            setup();
+
+            var updateHeaders = function () {
                 if (_.isUndefined(maxHeight)) {
                     maxHeight = table[0].offsetHeight;
                 }
@@ -83,6 +97,7 @@ angular.module('encore.ui.rxFloatingHeader', [])
                         // Put the cloned `tr` elements back into the DOM
                         _.each(clones, function (clone) {
                             header.append(clone);
+                            $compile(clone)(scope.$new());
                         });
 
                         // Apply the rx-floating-header class to each `tr` and
@@ -134,8 +149,16 @@ angular.module('encore.ui.rxFloatingHeader', [])
             };
 
             rxDOMHelper.onscroll(function () {
-                scope.updateHeaders();
+                updateHeaders();
             });
+
+            scope.$watch(
+                function () {
+                    return header.find('th').length;
+                },
+                function () {
+                    setup();
+                });
 
         },
     };
